@@ -52,12 +52,20 @@ export default async function AnalysePage({
             Form, Belastung und Intensität deiner letzten {days} Tage
           </p>
         </div>
-        <Link
-          href="/"
-          className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
-          ← Übersicht
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/coach"
+            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            🤖 Coach
+          </Link>
+          <Link
+            href="/"
+            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          >
+            ← Übersicht
+          </Link>
+        </div>
       </header>
 
       <div className="mb-6">

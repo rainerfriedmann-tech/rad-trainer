@@ -15,9 +15,15 @@ export function Dashboard({ athlete }: { athlete: StravaAthlete }) {
         <div className="flex items-center gap-2">
           <Link
             href="/analyse"
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
             📊 Analyse
+          </Link>
+          <Link
+            href="/coach"
+            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
+            🤖 Coach
           </Link>
           <form action="/api/auth/logout" method="post">
             <button

@@ -21,9 +21,30 @@ Gebaut mit **Next.js (App Router) + TypeScript + Tailwind CSS**.
   - **Wochenbelastung** (Zeit, Distanz, Höhenmeter, TSS) als Balkendiagramm
   - **Intensitätsverteilung** über Leistungs-/Pulszonen
   - Hinterlegbare **Trainingswerte** (FTP, max./Schwellen-/Ruhe-HF)
-- ⬜ **Milestone 3 – KI-Coach mit Claude** (Trainingsempfehlungen & Q&A auf Basis
-  deiner Daten)
+- ✅ **Milestone 3 – KI-Coach mit Claude** *(aktuell)*
+  - Chat-Coach (`/coach`), der deine Analysedaten kennt und Trainings­empfehlungen
+    gibt sowie Fragen beantwortet
+  - Modell **Claude Opus 4.8** (`claude-opus-4-8`) mit adaptivem Thinking,
+    Antworten werden gestreamt
+  - Trainingsdaten (CTL/ATL/TSB, Wochenlast, Zonen) werden serverseitig in den
+    Kontext injiziert
 - ⬜ **Milestone 4 – Persistenz** (Datenbank statt nur On-Demand-Abruf)
+
+## KI-Coach (Milestone 3)
+
+Unter **„🤖 Coach"** chattest du mit einem Trainingscoach, der über die
+Analyse-Pipeline deine echten Strava-Daten der letzten 120 Tage kennt.
+
+Voraussetzung: ein **Anthropic-API-Key**.
+
+```bash
+# in .env.local
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Key erstellen unter <https://console.anthropic.com>. Ohne Key zeigt die
+Coach-Seite einen Hinweis statt des Chats. Die Anfragen laufen serverseitig
+(`/api/coach`), der Key verlässt den Server nicht.
 
 ## Trainingsmetriken (Milestone 2)
 
