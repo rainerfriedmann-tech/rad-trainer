@@ -25,7 +25,7 @@ export async function saveSettingsAction(formData: FormData): Promise<void> {
     restHr: parseNumberField(formData.get("restHr")),
     thresholdHr: parseNumberField(formData.get("thresholdHr")),
   };
-  saveStoredSettings(session.athlete.id, settings);
+  await saveStoredSettings(session.athlete.id, settings);
   revalidatePath("/analyse");
 }
 

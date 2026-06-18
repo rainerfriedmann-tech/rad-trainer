@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const windowDays = 90;
     await ensureSynced(session.athlete.id, session.access_token, windowDays);
     const afterIso = new Date(Date.now() - windowDays * 86400 * 1000).toISOString();
-    const activities = getStoredActivities(session.athlete.id, afterIso).slice(0, perPage);
+    const activities = (await getStoredActivities(session.athlete.id, afterIso)).slice(0, perPage);
     return NextResponse.json({ activities });
   } catch (e) {
     console.error("Failed to load activities:", e);

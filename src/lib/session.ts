@@ -76,7 +76,7 @@ export async function saveSession(
   athlete: StravaAthlete,
   tokens: StravaTokens,
 ): Promise<void> {
-  upsertAthlete(athlete, tokens);
+  await upsertAthlete(athlete, tokens);
   await setCookie(athlete.id);
 }
 
@@ -88,7 +88,7 @@ export async function readSession(): Promise<SessionData | null> {
   const payload = decrypt(value);
   if (!payload) return null;
 
-  const stored = getStoredAthlete(payload.athleteId);
+  const stored = await getStoredAthlete(payload.athleteId);
   if (!stored) return null;
   return {
     ...stored.tokens,
@@ -121,6 +121,6 @@ export async function getValidSession(): Promise<SessionData | null> {
     refresh_token: refreshed.refresh_token,
     expires_at: refreshed.expires_at,
   };
-  updateAthleteTokens(session.athlete.id, tokens);
+  await updateAthleteTokens(session.athlete.id, tokens);
   return { ...tokens, athlete: session.athlete };
 }

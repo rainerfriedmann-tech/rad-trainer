@@ -22,8 +22,8 @@ export async function syncActivities(
 ): Promise<number> {
   const afterUnix = Math.floor(Date.now() / 1000) - days * 86400;
   const activities = await fetchActivitiesSince(accessToken, afterUnix);
-  upsertActivities(athleteId, activities);
-  setLastSynced(athleteId, Math.floor(Date.now() / 1000));
+  await upsertActivities(athleteId, activities);
+  await setLastSynced(athleteId, Math.floor(Date.now() / 1000));
   return activities.length;
 }
 
@@ -34,7 +34,7 @@ export async function ensureSynced(
   days: number,
   force = false,
 ): Promise<boolean> {
-  const stored = getStoredAthlete(athleteId);
+  const stored = await getStoredAthlete(athleteId);
   if (force || needsSync(stored?.lastSyncedAt ?? null)) {
     await syncActivities(athleteId, accessToken, days);
     return true;

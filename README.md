@@ -29,8 +29,8 @@ Gebaut mit **Next.js (App Router) + TypeScript + Tailwind CSS**.
   - Trainingsdaten (CTL/ATL/TSB, Wochenlast, Zonen) werden serverseitig in den
     Kontext injiziert
 - ✅ **Milestone 4 – Persistenz** *(aktuell)*
-  - Lokale **SQLite-Datenbank** (better-sqlite3) für Tokens, Einstellungen und
-    Aktivitäten
+  - **SQLite-kompatible Datenbank** (libSQL) für Tokens, Einstellungen und
+    Aktivitäten – lokal als Datei, in der Cloud via Turso (siehe `DEPLOY.md`)
   - Strava-Tokens liegen serverseitig in der DB; das Cookie enthält nur noch die
     (verschlüsselte) Athleten-ID
   - Aktivitäten werden gespeichert und nur bei Veraltung (>15 min) erneut von
@@ -122,7 +122,7 @@ src/
     ActivityList.tsx                # Aktivitätenliste (Client)
   lib/
     strava.ts                       # Strava-API-Client & OAuth-Helfer
-    db.ts                           # SQLite-Verbindung + Schema
+    db.ts                           # libSQL-Verbindung + Schema (Datei oder Turso)
     store.ts                        # DB-Zugriff (Athleten/Tokens, Settings, Aktivitäten)
     sync.ts                         # Aktivitäten von Strava in die DB synchronisieren
     session.ts                      # Session (Athleten-ID im Cookie, Tokens in der DB)
@@ -134,18 +134,18 @@ src/
     format.ts                       # Einheiten-Formatierung
 ```
 
-Die Datenbank liegt standardmäßig unter `./data/rad-trainer.db` (per
-`DATABASE_PATH` konfigurierbar) und ist via `.gitignore` vom Repo
-ausgeschlossen.
+Lokal liegt die Datenbank standardmäßig als Datei unter `./data/rad-trainer.db`
+(per `DATABASE_PATH` konfigurierbar, via `.gitignore` ausgeschlossen). Fürs
+Hosting wird stattdessen Turso genutzt (`TURSO_DATABASE_URL` +
+`TURSO_AUTH_TOKEN`) – siehe **`DEPLOY.md`** für die kostenlose Einrichtung mit
+Vercel + Turso.
 
 ## Sicherheitshinweise
 
-- Strava-Tokens werden serverseitig in der SQLite-Datenbank gespeichert; das
+- Strava-Tokens werden serverseitig in der Datenbank gespeichert; das
   httpOnly-Cookie enthält nur die verschlüsselte Athleten-ID (AES-256-GCM).
-- `SESSION_SECRET` und `ANTHROPIC_API_KEY` dürfen nicht ins Repo gelangen
-  (`.env.local` ist in `.gitignore`).
-- Die DB-Datei enthält die Strava-Tokens im Klartext – sie sollte entsprechend
-  geschützt werden (Dateirechte, kein Teilen des `data/`-Verzeichnisses).
-- Für den Produktivbetrieb empfiehlt sich ein fester `APP_URL`. Auf
-  serverlosen Plattformen mit flüchtigem Dateisystem muss `DATABASE_PATH` auf
-  persistenten Speicher (Volume) oder eine externe DB zeigen.
+- `SESSION_SECRET`, `ANTHROPIC_API_KEY` und der `TURSO_AUTH_TOKEN` dürfen nicht
+  ins Repo gelangen (`.env.local` ist in `.gitignore`).
+- Die Datenbank enthält die Strava-Tokens im Klartext – Zugang zur DB-Datei bzw.
+  zum Turso-Token entsprechend schützen.
+- Für den Produktivbetrieb empfiehlt sich ein fester `APP_URL`.

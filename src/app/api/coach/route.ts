@@ -7,8 +7,8 @@ import { loadAnalysis } from "@/lib/analysisLoader";
 import { buildAthleteContext, buildSystemPrompt } from "@/lib/coach";
 
 export const dynamic = "force-dynamic";
-// Coaching answers can involve adaptive thinking; give the function room.
-export const maxDuration = 120;
+// Coaching answers can involve adaptive thinking; 60s is the Vercel Hobby cap.
+export const maxDuration = 60;
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   // Build the athlete context from stored (synced) Strava data.
   const days = 120;
-  const stored = getStoredSettings(session.athlete.id);
+  const stored = await getStoredSettings(session.athlete.id);
   const settings: AthleteSettings = {
     ...stored,
     ftp: stored.ftp ?? session.athlete.ftp ?? null,

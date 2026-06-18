@@ -17,6 +17,6 @@ export async function loadAnalysis(
 ): Promise<AnalysisResult> {
   await ensureSynced(athleteId, accessToken, days, opts.force);
   const afterIso = new Date(Date.now() - days * 86400 * 1000).toISOString();
-  const activities = getStoredActivities(athleteId, afterIso);
+  const activities = await getStoredActivities(athleteId, afterIso);
   return analyze(activities, settings);
 }

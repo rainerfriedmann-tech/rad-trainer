@@ -1,71 +1,74 @@
-# Rad-Trainer im Internet hosten
+# Rad-Trainer kostenlos im Internet hosten (Vercel + Turso)
 
-Die App ist ein Next.js-Server **mit einer SQLite-Datei als Datenbank**. Sie
-braucht deshalb einen Host mit **dauerhaftem Speicher (Volume)**. Auf reinen
-Serverless-Plattformen (z. B. Vercel) geht die Datenbank bei jedem Neustart
-verloren – dort funktioniert die App so nicht.
+Die App läuft kostenlos und dauerhaft mit:
 
-Empfohlen: **Railway** – komplett über die Weboberfläche, ohne Kommandozeile.
-(Kostet aktuell ca. 5 $/Monat nach einem Gratis-Startguthaben. Eine
-kostengünstigere, aber technischere Alternative ist Fly.io.)
+- **Vercel** – hostet die Next.js-App (Gratis-Tarif „Hobby").
+- **Turso** – SQLite-kompatible Cloud-Datenbank (Gratis-Tarif), damit die Daten
+  dauerhaft gespeichert bleiben.
 
-## Schritt für Schritt mit Railway
+Beides wird über die Weboberfläche eingerichtet, ohne Kommandozeile.
 
-### 1. Strava-App vorbereiten
-Du brauchst eine Strava-API-App: <https://www.strava.com/settings/api>.
-Client ID und Client Secret notieren. Die **Authorization Callback Domain**
-trägst du erst in Schritt 6 ein (wenn du die Internet-Adresse kennst).
+Lokal (auf deinem Rechner) brauchst du **kein** Turso – dort nutzt die App
+automatisch eine Datei. Turso ist nur fürs Hosting nötig.
 
-### 2. Railway-Projekt aus GitHub erstellen
-1. Auf <https://railway.app> mit dem GitHub-Konto anmelden.
-2. **New Project → Deploy from GitHub repo → `rainerfriedmann-tech/rad-trainer`**.
-3. Unter **Settings → Source** als Branch `claude/nice-euler-48wdu1` wählen
-   (oder den Branch vorher nach `main` mergen).
+---
 
-Railway erkennt Next.js automatisch und baut die App.
+## Teil 1 — Datenbank bei Turso anlegen
 
-### 3. Speicher-Volume anhängen (wichtig!)
-Im Service: **Settings → Volumes → New Volume**, als **Mount path** `/data`
-eintragen. Hier wird die Datenbank dauerhaft gespeichert.
+1. Auf <https://turso.tech> kostenlos registrieren (geht mit GitHub).
+2. Im Dashboard eine **neue Datenbank** erstellen (Name z. B. `rad-trainer`).
+3. Die **Database-URL** kopieren – sie sieht so aus:
+   `libsql://rad-trainer-deinname.turso.io`
+4. Einen **Auth-Token** für die Datenbank erzeugen („Create Token") und kopieren.
 
-### 4. Umgebungsvariablen setzen
-Im Service unter **Variables** anlegen:
+Diese beiden Werte brauchst du gleich.
 
-| Variable | Wert |
-| --- | --- |
-| `STRAVA_CLIENT_ID` | aus deiner Strava-App |
-| `STRAVA_CLIENT_SECRET` | aus deiner Strava-App |
-| `SESSION_SECRET` | langer Zufallstext (siehe unten) |
-| `DATABASE_PATH` | `/data/rad-trainer.db` |
-| `ANTHROPIC_API_KEY` | optional, für den KI-Coach |
-| `APP_URL` | trägst du in Schritt 6 ein |
+## Teil 2 — App bei Vercel deployen
 
-`SESSION_SECRET` erzeugen (lokal im Terminal, oder einen langen zufälligen
-Text deiner Wahl, ≥ 32 Zeichen):
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+1. Auf <https://vercel.com> mit dem GitHub-Konto anmelden.
+2. **Add New… → Project** → das Repo `rainerfriedmann-tech/rad-trainer`
+   importieren. Als Branch `claude/nice-euler-48wdu1` wählen (oder vorher nach
+   `main` mergen).
+3. Vor dem ersten Deploy unter **Environment Variables** eintragen:
 
-### 5. Öffentliche Adresse erzeugen
-**Settings → Networking → Generate Domain**. Du bekommst eine Adresse wie
-`rad-trainer-production.up.railway.app`.
+   | Variable | Wert |
+   | --- | --- |
+   | `STRAVA_CLIENT_ID` | aus deiner Strava-App |
+   | `STRAVA_CLIENT_SECRET` | aus deiner Strava-App |
+   | `SESSION_SECRET` | langer Zufallstext (≥ 32 Zeichen) |
+   | `TURSO_DATABASE_URL` | die `libsql://…`-URL aus Teil 1 |
+   | `TURSO_AUTH_TOKEN` | der Token aus Teil 1 |
+   | `ANTHROPIC_API_KEY` | optional, für den KI-Coach |
 
-### 6. APP_URL und Strava-Callback eintragen
-- In Railway die Variable **`APP_URL`** auf die volle Adresse setzen, z. B.
-  `https://rad-trainer-production.up.railway.app` (Railway startet danach neu).
-- In den **Strava-API-Einstellungen** die **Authorization Callback Domain** auf
-  den Host **ohne `https://`** setzen, z. B.
-  `rad-trainer-production.up.railway.app`.
+   `SESSION_SECRET` erzeugen (oder irgendeinen langen Zufallstext nehmen):
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+4. **Deploy** klicken. Du bekommst eine Adresse wie `rad-trainer.vercel.app`.
 
-### 7. Fertig
-Adresse im Browser öffnen → **„Mit Strava verbinden"**. Deine Daten landen jetzt
-dauerhaft im Volume; bei jedem Besuch werden neue Aktivitäten synchronisiert.
+## Teil 3 — Adresse verknüpfen
+
+1. In Vercel die Variable **`APP_URL`** ergänzen, z. B.
+   `https://rad-trainer.vercel.app` → danach unter **Deployments** neu deployen
+   („Redeploy"), damit die Variable greift.
+2. In den **Strava-API-Einstellungen** (<https://www.strava.com/settings/api>)
+   die **Authorization Callback Domain** auf den Host **ohne `https://`** setzen,
+   z. B. `rad-trainer.vercel.app`.
+
+## Fertig
+
+Adresse öffnen → **„Mit Strava verbinden"**. Deine Aktivitäten landen jetzt
+dauerhaft in der Turso-Datenbank.
+
+---
 
 ## Hinweise
-- **Updates ausrollen:** Jeder neue Push auf den gewählten Branch löst auf
-  Railway automatisch einen neuen Build aus.
-- **Sicherheit:** Die DB-Datei im Volume enthält die Strava-Tokens. Halte den
-  Zugang zum Railway-Projekt privat.
-- **Andere Hosts:** Jeder Node-Host mit persistentem Volume funktioniert
-  (Render mit „Persistent Disk", Fly.io mit „Volumes", eigener Server). Überall
-  gilt: `DATABASE_PATH` auf den Volume-Pfad zeigen lassen und `APP_URL` setzen.
+- **Updates:** Jeder Push auf den gewählten Branch deployt Vercel automatisch neu.
+- **Coach-Antwortzeit:** Auf dem Gratis-Tarif sind Server-Antworten auf 60 s
+  begrenzt. Sehr lange Coach-Antworten könnten in seltenen Fällen abbrechen –
+  für normale Fragen reicht es problemlos.
+- **Strava-Limits:** Die App synchronisiert höchstens alle 15 Minuten; das bleibt
+  klar innerhalb der kostenlosen Strava-API-Limits.
+- **Anderer Gratis-Weg:** Statt Vercel geht auch jeder Node-Host – mit Turso als
+  DB bleibt die Konfiguration dieselbe (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`,
+  `APP_URL`).

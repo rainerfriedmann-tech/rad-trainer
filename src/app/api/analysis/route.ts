@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const days = Math.min(Math.max(Number(url.searchParams.get("days") ?? "120"), 7), 365);
 
   try {
-    const stored = getStoredSettings(session.athlete.id);
+    const stored = await getStoredSettings(session.athlete.id);
     const settings: AthleteSettings = {
       ...stored,
       ftp: stored.ftp ?? session.athlete.ftp ?? null,

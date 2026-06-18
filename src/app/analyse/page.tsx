@@ -31,7 +31,7 @@ export default async function AnalysePage({
   const { days: daysParam } = await searchParams;
   const days = Math.min(Math.max(Number(daysParam ?? "120"), 7), 365);
 
-  const stored = getStoredSettings(session.athlete.id);
+  const stored = await getStoredSettings(session.athlete.id);
   // Fall back to the FTP configured on Strava if none stored locally.
   const settings: AthleteSettings = {
     ...stored,
