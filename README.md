@@ -14,11 +14,34 @@ Gebaut mit **Next.js (App Router) + TypeScript + Tailwind CSS**.
     Token-Refresh
   - Abruf & Anzeige der letzten Aktivitäten (Distanz, Dauer, Tempo, Höhenmeter,
     Leistung, Puls, Trittfrequenz)
-- ⬜ **Milestone 2 – Analyse-Dashboard** (Trends, Wochenbelastung, CTL/ATL/TSB,
-  Leistungs-/Pulszonen)
+- ✅ **Milestone 2 – Analyse-Dashboard** *(aktuell)*
+  - Form-Modell **CTL/ATL/TSB** (Fitness/Ermüdung/Form) als Performance
+    Management Chart
+  - **TSS-Berechnung** aus Leistung (FTP), Herzfrequenz oder als Dauer-Schätzung
+  - **Wochenbelastung** (Zeit, Distanz, Höhenmeter, TSS) als Balkendiagramm
+  - **Intensitätsverteilung** über Leistungs-/Pulszonen
+  - Hinterlegbare **Trainingswerte** (FTP, max./Schwellen-/Ruhe-HF)
 - ⬜ **Milestone 3 – KI-Coach mit Claude** (Trainingsempfehlungen & Q&A auf Basis
   deiner Daten)
 - ⬜ **Milestone 4 – Persistenz** (Datenbank statt nur On-Demand-Abruf)
+
+## Trainingsmetriken (Milestone 2)
+
+Unter **„📊 Analyse"** (Button im Dashboard) werden deine Aktivitäten der
+letzten 120 Tage ausgewertet:
+
+- **TSS (Training Stress Score)** pro Aktivität – aus Leistung
+  (`TSS = h · IF² · 100`, `IF = NP/FTP`), ersatzweise aus der Herzfrequenz oder
+  als reine Dauer-Schätzung.
+- **CTL/ATL/TSB** – 42- bzw. 7-Tage-EWMA der täglichen TSS; TSB („Form") als
+  Differenz. Je mehr Historie, desto stabiler die Werte.
+- Damit die Berechnung greift, am besten **FTP** und **Herzfrequenz-Werte** im
+  Formular oben hinterlegen (FTP wird, falls auf Strava gesetzt, automatisch
+  übernommen).
+
+> Hinweis: Strava liefert in der Aktivitätsübersicht nur Durchschnittswerte
+> (keine Streams). Power-/HF-basierte Zahlen sind daher konsistente Näherungen
+> der streambasierten Werte eines Radcomputers.
 
 ## Einrichtung
 

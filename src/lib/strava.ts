@@ -25,6 +25,8 @@ export interface StravaAthlete {
   city?: string;
   country?: string;
   weight?: number;
+  /** Functional Threshold Power, if the athlete has set it on Strava. */
+  ftp?: number;
 }
 
 export interface StravaTokenResponse extends StravaTokens {
@@ -156,6 +158,28 @@ export async function fetchActivities(
     throw new Error(`Strava activities fetch failed: ${res.status} ${await res.text()}`);
   }
   return (await res.json()) as StravaActivity[];
+}
+
+/**
+ * Fetch all activities since a given Unix timestamp, paging through results.
+ * Caps at `maxPages` to avoid runaway requests for very active athletes.
+ */
+export async function fetchActivitiesSince(
+  accessToken: string,
+  afterUnix: number,
+  maxPages = 6,
+): Promise<StravaActivity[]> {
+  const all: StravaActivity[] = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const batch = await fetchActivities(accessToken, {
+      page,
+      perPage: 100,
+      after: afterUnix,
+    });
+    all.push(...batch);
+    if (batch.length < 100) break; // last page
+  }
+  return all;
 }
 
 /** Fetch the authenticated athlete's profile. */
