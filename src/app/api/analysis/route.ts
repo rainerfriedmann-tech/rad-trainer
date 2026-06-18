@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getValidSession } from "@/lib/session";
-import { readSettings } from "@/lib/settings";
-import { fetchActivitiesSince } from "@/lib/strava";
-import { analyze } from "@/lib/training";
+import { getStoredSettings } from "@/lib/store";
+import { loadAnalysis } from "@/lib/analysisLoader";
+import type { AthleteSettings } from "@/lib/settings";
 
 /**
  * GET /api/analysis?days=120
- * Fetches the athlete's recent activities and returns computed training-load
- * metrics (PMC, weekly volume, intensity zones).
+ * Returns computed training-load metrics (PMC, weekly volume, intensity zones)
+ * from the local store, syncing from Strava first if stale.
  */
 export async function GET(req: NextRequest) {
   const session = await getValidSession();
@@ -18,12 +18,14 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   // Default to 120 days so the 42-day CTL average is well warmed up.
   const days = Math.min(Math.max(Number(url.searchParams.get("days") ?? "120"), 7), 365);
-  const afterUnix = Math.floor(Date.now() / 1000) - days * 86400;
 
   try {
-    const settings = await readSettings();
-    const activities = await fetchActivitiesSince(session.access_token, afterUnix);
-    const result = analyze(activities, settings);
+    const stored = getStoredSettings(session.athlete.id);
+    const settings: AthleteSettings = {
+      ...stored,
+      ftp: stored.ftp ?? session.athlete.ftp ?? null,
+    };
+    const result = await loadAnalysis(session.athlete.id, session.access_token, settings, days);
     return NextResponse.json({ days, settings, ...result });
   } catch (e) {
     console.error("Analysis failed:", e);

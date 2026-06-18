@@ -28,7 +28,13 @@ Gebaut mit **Next.js (App Router) + TypeScript + Tailwind CSS**.
     Antworten werden gestreamt
   - Trainingsdaten (CTL/ATL/TSB, Wochenlast, Zonen) werden serverseitig in den
     Kontext injiziert
-- ⬜ **Milestone 4 – Persistenz** (Datenbank statt nur On-Demand-Abruf)
+- ✅ **Milestone 4 – Persistenz** *(aktuell)*
+  - Lokale **SQLite-Datenbank** (better-sqlite3) für Tokens, Einstellungen und
+    Aktivitäten
+  - Strava-Tokens liegen serverseitig in der DB; das Cookie enthält nur noch die
+    (verschlüsselte) Athleten-ID
+  - Aktivitäten werden gespeichert und nur bei Veraltung (>15 min) erneut von
+    Strava geladen – plus „↻ Aktualisieren"-Button für manuellen Sync
 
 ## KI-Coach (Milestone 3)
 
@@ -116,16 +122,30 @@ src/
     ActivityList.tsx                # Aktivitätenliste (Client)
   lib/
     strava.ts                       # Strava-API-Client & OAuth-Helfer
-    session.ts                      # Verschlüsselte Session + Token-Refresh
+    db.ts                           # SQLite-Verbindung + Schema
+    store.ts                        # DB-Zugriff (Athleten/Tokens, Settings, Aktivitäten)
+    sync.ts                         # Aktivitäten von Strava in die DB synchronisieren
+    session.ts                      # Session (Athleten-ID im Cookie, Tokens in der DB)
+    analysisLoader.ts               # Sync + Analyse aus der DB
+    training.ts                     # Trainings-Mathematik (TSS, PMC, Zonen)
+    coach.ts                        # System-Prompt & Kontext für den KI-Coach
+    settings.ts                     # Settings-Typen & Defaults
     url.ts                          # Base-URL / Redirect-URI-Ermittlung
     format.ts                       # Einheiten-Formatierung
 ```
 
+Die Datenbank liegt standardmäßig unter `./data/rad-trainer.db` (per
+`DATABASE_PATH` konfigurierbar) und ist via `.gitignore` vom Repo
+ausgeschlossen.
+
 ## Sicherheitshinweise
 
-- Strava-Tokens liegen verschlüsselt in einem httpOnly-Cookie; sie sind für
-  JavaScript im Browser nicht lesbar.
-- `SESSION_SECRET` darf nicht ins Repo gelangen (`.env.local` ist in
-  `.gitignore`).
-- Für den Produktivbetrieb sollte ein dauerhafter Speicher (DB) sowie ein
-  fester `APP_URL` konfiguriert werden.
+- Strava-Tokens werden serverseitig in der SQLite-Datenbank gespeichert; das
+  httpOnly-Cookie enthält nur die verschlüsselte Athleten-ID (AES-256-GCM).
+- `SESSION_SECRET` und `ANTHROPIC_API_KEY` dürfen nicht ins Repo gelangen
+  (`.env.local` ist in `.gitignore`).
+- Die DB-Datei enthält die Strava-Tokens im Klartext – sie sollte entsprechend
+  geschützt werden (Dateirechte, kein Teilen des `data/`-Verzeichnisses).
+- Für den Produktivbetrieb empfiehlt sich ein fester `APP_URL`. Auf
+  serverlosen Plattformen mit flüchtigem Dateisystem muss `DATABASE_PATH` auf
+  persistenten Speicher (Volume) oder eine externe DB zeigen.

@@ -1,18 +1,22 @@
 /**
- * Server-side loader that ties Strava data fetching to the training analysis.
- * Kept out of the page component so impure calls (Date.now) and async IO live
- * in a plain module rather than a React render path.
+ * Server-side loader: keeps the local activity store fresh, then computes the
+ * training analysis from stored data. Reading from SQLite means analysis and
+ * the coach don't re-hit Strava on every request.
  */
 import type { AthleteSettings } from "./settings";
-import { fetchActivitiesSince } from "./strava";
+import { getStoredActivities } from "./store";
+import { ensureSynced } from "./sync";
 import { analyze, type AnalysisResult } from "./training";
 
 export async function loadAnalysis(
+  athleteId: number,
   accessToken: string,
   settings: AthleteSettings,
   days: number,
+  opts: { force?: boolean } = {},
 ): Promise<AnalysisResult> {
-  const afterUnix = Math.floor(Date.now() / 1000) - days * 86400;
-  const activities = await fetchActivitiesSince(accessToken, afterUnix);
+  await ensureSynced(athleteId, accessToken, days, opts.force);
+  const afterIso = new Date(Date.now() - days * 86400 * 1000).toISOString();
+  const activities = getStoredActivities(athleteId, afterIso);
   return analyze(activities, settings);
 }

@@ -1,7 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { saveSettings, type AthleteSettings } from "@/lib/settings";
+import { getValidSession } from "@/lib/session";
+import { saveStoredSettings } from "@/lib/store";
+import { syncActivities } from "@/lib/sync";
+import type { AthleteSettings } from "@/lib/settings";
 
 function parseNumberField(value: FormDataEntryValue | null): number | null {
   if (value == null) return null;
@@ -11,14 +14,25 @@ function parseNumberField(value: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** Server Action: persist the athlete's training settings. */
+/** Server Action: persist the athlete's training settings to the database. */
 export async function saveSettingsAction(formData: FormData): Promise<void> {
+  const session = await getValidSession();
+  if (!session) return;
+
   const settings: AthleteSettings = {
     ftp: parseNumberField(formData.get("ftp")),
     maxHr: parseNumberField(formData.get("maxHr")),
     restHr: parseNumberField(formData.get("restHr")),
     thresholdHr: parseNumberField(formData.get("thresholdHr")),
   };
-  await saveSettings(settings);
+  saveStoredSettings(session.athlete.id, settings);
+  revalidatePath("/analyse");
+}
+
+/** Server Action: force a fresh sync of activities from Strava. */
+export async function syncAction(): Promise<void> {
+  const session = await getValidSession();
+  if (!session) return;
+  await syncActivities(session.athlete.id, session.access_token, 180);
   revalidatePath("/analyse");
 }

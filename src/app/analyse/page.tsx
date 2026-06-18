@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { getValidSession } from "@/lib/session";
-import { readSettings, type AthleteSettings } from "@/lib/settings";
+import type { AthleteSettings } from "@/lib/settings";
+import { getStoredSettings } from "@/lib/store";
 import { loadAnalysis } from "@/lib/analysisLoader";
 import type { AnalysisResult } from "@/lib/training";
 import { ConnectStrava } from "@/components/ConnectStrava";
 import { SettingsForm } from "@/components/analysis/SettingsForm";
 import { AnalysisView } from "@/components/analysis/AnalysisView";
+import { syncAction } from "./actions";
 
 // Always recompute on request; depends on the athlete's live Strava data.
 export const dynamic = "force-dynamic";
@@ -29,7 +31,7 @@ export default async function AnalysePage({
   const { days: daysParam } = await searchParams;
   const days = Math.min(Math.max(Number(daysParam ?? "120"), 7), 365);
 
-  const stored = await readSettings();
+  const stored = getStoredSettings(session.athlete.id);
   // Fall back to the FTP configured on Strava if none stored locally.
   const settings: AthleteSettings = {
     ...stored,
@@ -38,7 +40,7 @@ export default async function AnalysePage({
 
   let result: AnalysisResult | null = null;
   try {
-    result = await loadAnalysis(session.access_token, settings, days);
+    result = await loadAnalysis(session.athlete.id, session.access_token, settings, days);
   } catch (e) {
     console.error("Analyse failed:", e);
   }
@@ -53,6 +55,14 @@ export default async function AnalysePage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <form action={syncAction}>
+            <button
+              type="submit"
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-600 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              ↻ Aktualisieren
+            </button>
+          </form>
           <Link
             href="/coach"
             className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"

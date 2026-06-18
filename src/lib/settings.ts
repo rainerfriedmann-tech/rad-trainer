@@ -1,12 +1,8 @@
 /**
- * Athlete training settings (FTP, heart-rate anchors). Needed to turn raw
- * Strava activities into training-load metrics (TSS, zones).
- *
- * Stored in a plain httpOnly cookie — these values are not secret.
+ * Athlete training settings (FTP, heart-rate anchors) needed to turn raw
+ * activities into training-load metrics. Persisted in the database — see
+ * `getStoredSettings` / `saveStoredSettings` in `store.ts`.
  */
-import { cookies } from "next/headers";
-
-const COOKIE_NAME = "rt_settings";
 
 export interface AthleteSettings {
   /** Functional Threshold Power in watts. */
@@ -25,29 +21,6 @@ export const DEFAULT_SETTINGS: AthleteSettings = {
   restHr: null,
   thresholdHr: null,
 };
-
-export async function readSettings(): Promise<AthleteSettings> {
-  const store = await cookies();
-  const raw = store.get(COOKIE_NAME)?.value;
-  if (!raw) return { ...DEFAULT_SETTINGS };
-  try {
-    const parsed = JSON.parse(raw) as Partial<AthleteSettings>;
-    return { ...DEFAULT_SETTINGS, ...parsed };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
-}
-
-export async function saveSettings(settings: AthleteSettings): Promise<void> {
-  const store = await cookies();
-  store.set(COOKIE_NAME, JSON.stringify(settings), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
-  });
-}
 
 /**
  * If the athlete hasn't set a threshold HR but has a max HR, estimate it

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidSession } from "@/lib/session";
-import { readSettings, type AthleteSettings } from "@/lib/settings";
+import type { AthleteSettings } from "@/lib/settings";
+import { getStoredSettings } from "@/lib/store";
 import { loadAnalysis } from "@/lib/analysisLoader";
 import { buildAthleteContext, buildSystemPrompt } from "@/lib/coach";
 
@@ -60,9 +61,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_messages" }, { status: 400 });
   }
 
-  // Build the athlete context from live Strava data.
+  // Build the athlete context from stored (synced) Strava data.
   const days = 120;
-  const stored = await readSettings();
+  const stored = getStoredSettings(session.athlete.id);
   const settings: AthleteSettings = {
     ...stored,
     ftp: stored.ftp ?? session.athlete.ftp ?? null,
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
 
   let system: string;
   try {
-    const analysis = await loadAnalysis(session.access_token, settings, days);
+    const analysis = await loadAnalysis(session.athlete.id, session.access_token, settings, days);
     system = buildSystemPrompt(
       buildAthleteContext(session.athlete, settings, analysis, days),
     );

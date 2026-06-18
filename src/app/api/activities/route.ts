@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getValidSession } from "@/lib/session";
-import { fetchActivities } from "@/lib/strava";
+import { getStoredActivities } from "@/lib/store";
+import { ensureSynced } from "@/lib/sync";
 
 /**
- * GET /api/activities?page=1&per_page=30
- * Returns the authenticated athlete's activities from Strava.
+ * GET /api/activities?per_page=30
+ * Returns the athlete's recent activities from the local store, syncing from
+ * Strava first if the stored copy is stale.
  */
 export async function GET(req: NextRequest) {
   const session = await getValidSession();
@@ -13,17 +15,17 @@ export async function GET(req: NextRequest) {
   }
 
   const url = new URL(req.url);
-  const page = Number(url.searchParams.get("page") ?? "1");
   const perPage = Math.min(Number(url.searchParams.get("per_page") ?? "30"), 100);
 
   try {
-    const activities = await fetchActivities(session.access_token, {
-      page,
-      perPage,
-    });
+    // Keep a rolling 90-day window fresh, then return the most recent slice.
+    const windowDays = 90;
+    await ensureSynced(session.athlete.id, session.access_token, windowDays);
+    const afterIso = new Date(Date.now() - windowDays * 86400 * 1000).toISOString();
+    const activities = getStoredActivities(session.athlete.id, afterIso).slice(0, perPage);
     return NextResponse.json({ activities });
   } catch (e) {
-    console.error("Failed to fetch activities:", e);
+    console.error("Failed to load activities:", e);
     return NextResponse.json({ error: "fetch_failed" }, { status: 502 });
   }
 }

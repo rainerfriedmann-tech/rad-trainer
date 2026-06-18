@@ -28,11 +28,10 @@ export async function GET(req: NextRequest) {
     const token = await exchangeCodeForTokens(code);
     const athlete = token.athlete ?? (await fetchAthlete(token.access_token));
 
-    await saveSession({
+    await saveSession(athlete, {
       access_token: token.access_token,
       refresh_token: token.refresh_token,
       expires_at: token.expires_at,
-      athlete,
     });
 
     const res = NextResponse.redirect(`${baseUrl}/`);
