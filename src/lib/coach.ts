@@ -94,6 +94,12 @@ export function buildSystemPrompt(context: string): string {
   return `${COACH_PERSONA}\n\n---\n\n${context}`;
 }
 
+/** A single chat turn in the coach conversation. */
+export interface CoachMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 /** Suggested starter questions shown in the UI. */
 export const SUGGESTED_QUESTIONS = [
   "Wie ist meine aktuelle Form einzuschätzen?",

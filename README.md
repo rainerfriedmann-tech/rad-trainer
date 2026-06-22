@@ -21,10 +21,10 @@ Gebaut mit **Next.js (App Router) + TypeScript + Tailwind CSS**.
   - **Wochenbelastung** (Zeit, Distanz, Höhenmeter, TSS) als Balkendiagramm
   - **Intensitätsverteilung** über Leistungs-/Pulszonen
   - Hinterlegbare **Trainingswerte** (FTP, max./Schwellen-/Ruhe-HF)
-- ✅ **Milestone 3 – KI-Coach mit Claude** *(aktuell)*
+- ✅ **Milestone 3 – KI-Coach** *(aktuell)*
   - Chat-Coach (`/coach`), der deine Analysedaten kennt und Trainings­empfehlungen
     gibt sowie Fragen beantwortet
-  - Modell **Claude Opus 4.8** (`claude-opus-4-8`) mit adaptivem Thinking,
+  - Anbieter wählbar: **Google Gemini** (kostenlos, Standard) oder **Claude**;
     Antworten werden gestreamt
   - Trainingsdaten (CTL/ATL/TSB, Wochenlast, Zonen) werden serverseitig in den
     Kontext injiziert
@@ -41,16 +41,21 @@ Gebaut mit **Next.js (App Router) + TypeScript + Tailwind CSS**.
 Unter **„🤖 Coach"** chattest du mit einem Trainingscoach, der über die
 Analyse-Pipeline deine echten Strava-Daten der letzten 120 Tage kennt.
 
-Voraussetzung: ein **Anthropic-API-Key**.
+Voraussetzung: ein KI-API-Key. Es werden zwei Anbieter unterstützt:
 
 ```bash
-# in .env.local
-ANTHROPIC_API_KEY=sk-ant-...
+# in .env.local – empfohlen, da kostenlos:
+GEMINI_API_KEY=...          # Key: https://aistudio.google.com/apikey
+# optional: GEMINI_MODEL=gemini-2.5-flash
+
+# Alternative (wird nur genutzt, wenn GEMINI_API_KEY leer ist):
+# ANTHROPIC_API_KEY=sk-ant-...   # Key: https://console.anthropic.com
 ```
 
-Key erstellen unter <https://console.anthropic.com>. Ohne Key zeigt die
-Coach-Seite einen Hinweis statt des Chats. Die Anfragen laufen serverseitig
-(`/api/coach`), der Key verlässt den Server nicht.
+Ist `GEMINI_API_KEY` gesetzt, läuft der Coach über **Google Gemini** (kostenloser
+Tarif), sonst über **Claude**. Ohne Key zeigt die Coach-Seite einen Hinweis statt
+des Chats. Die Anfragen laufen serverseitig (`/api/coach`), der Key verlässt den
+Server nicht.
 
 ## Trainingsmetriken (Milestone 2)
 
@@ -129,6 +134,7 @@ src/
     analysisLoader.ts               # Sync + Analyse aus der DB
     training.ts                     # Trainings-Mathematik (TSS, PMC, Zonen)
     coach.ts                        # System-Prompt & Kontext für den KI-Coach
+    gemini.ts                       # Gemini-Streaming (REST) für den Coach
     settings.ts                     # Settings-Typen & Defaults
     url.ts                          # Base-URL / Redirect-URI-Ermittlung
     format.ts                       # Einheiten-Formatierung

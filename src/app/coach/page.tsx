@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CoachPage() {
   const session = await readSession();
-  const configured = !!process.env.ANTHROPIC_API_KEY;
+  const configured = !!(process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY);
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-10">
@@ -33,9 +33,11 @@ export default async function CoachPage() {
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-6 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
           <p className="font-medium">KI-Coach noch nicht aktiviert</p>
           <p className="mt-1">
-            Setze <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">ANTHROPIC_API_KEY</code>{" "}
+            Setze <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">GEMINI_API_KEY</code>{" "}
             in <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">.env.local</code>{" "}
-            (Key unter console.anthropic.com), dann starte die App neu.
+            (kostenloser Key unter aistudio.google.com/apikey), dann starte die App
+            neu. Alternativ funktioniert auch{" "}
+            <code className="rounded bg-amber-100 px-1 dark:bg-amber-900">ANTHROPIC_API_KEY</code>.
           </p>
         </div>
       ) : (

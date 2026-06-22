@@ -4,21 +4,21 @@ import { getValidSession } from "@/lib/session";
 import type { AthleteSettings } from "@/lib/settings";
 import { getStoredSettings } from "@/lib/store";
 import { loadAnalysis } from "@/lib/analysisLoader";
-import { buildAthleteContext, buildSystemPrompt } from "@/lib/coach";
+import { buildAthleteContext, buildSystemPrompt, type CoachMessage } from "@/lib/coach";
+import { geminiConfigured, streamGemini } from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
-// Coaching answers can involve adaptive thinking; 60s is the Vercel Hobby cap.
+// Coaching answers can take a moment; 60s is the Vercel Hobby cap.
 export const maxDuration = 60;
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
+function coachConfigured(): boolean {
+  return geminiConfigured() || !!process.env.ANTHROPIC_API_KEY;
 }
 
 /** Validate and normalise the incoming chat history. */
-function parseMessages(input: unknown): ChatMessage[] | null {
+function parseMessages(input: unknown): CoachMessage[] | null {
   if (!Array.isArray(input) || input.length === 0) return null;
-  const messages: ChatMessage[] = [];
+  const messages: CoachMessage[] = [];
   for (const m of input) {
     if (
       !m ||
@@ -30,18 +30,44 @@ function parseMessages(input: unknown): ChatMessage[] | null {
     }
     messages.push({ role: m.role, content: m.content.slice(0, 4000) });
   }
-  // The Messages API requires the conversation to start with a user turn.
+  // The conversation must start with a user turn.
   if (messages[0].role !== "user") return null;
   return messages;
+}
+
+/** Claude (Anthropic) reply stream — fallback when no Gemini key is set. */
+function streamClaude(system: string, messages: CoachMessage[]): ReadableStream<Uint8Array> {
+  const client = new Anthropic();
+  const encoder = new TextEncoder();
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        const claude = client.messages.stream({
+          model: "claude-opus-4-8",
+          max_tokens: 4096,
+          thinking: { type: "adaptive" },
+          output_config: { effort: "medium" },
+          system,
+          messages,
+        });
+        claude.on("text", (delta) => controller.enqueue(encoder.encode(delta)));
+        await claude.finalMessage();
+        controller.close();
+      } catch (e) {
+        controller.error(e);
+      }
+    },
+  });
 }
 
 /**
  * POST /api/coach
  * Body: { messages: {role, content}[] }
- * Streams the coach's reply as plain UTF-8 text.
+ * Streams the coach's reply as plain UTF-8 text. Uses Gemini when
+ * GEMINI_API_KEY is set, otherwise Claude.
  */
 export async function POST(req: NextRequest) {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!coachConfigured()) {
     return NextResponse.json({ error: "missing_api_key" }, { status: 503 });
   }
 
@@ -80,29 +106,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "analysis_failed" }, { status: 502 });
   }
 
-  const client = new Anthropic();
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      try {
-        const claude = client.messages.stream({
-          model: "claude-opus-4-8",
-          max_tokens: 4096,
-          thinking: { type: "adaptive" },
-          output_config: { effort: "medium" },
-          system,
-          messages,
-        });
-        claude.on("text", (delta) => controller.enqueue(encoder.encode(delta)));
-        await claude.finalMessage();
-        controller.close();
-      } catch (e) {
-        console.error("Coach stream failed:", e);
-        controller.error(e);
-      }
-    },
-  });
+  let stream: ReadableStream<Uint8Array>;
+  try {
+    stream = geminiConfigured()
+      ? await streamGemini(system, messages)
+      : streamClaude(system, messages);
+  } catch (e) {
+    console.error("Coach stream failed:", e);
+    return NextResponse.json({ error: "coach_failed" }, { status: 502 });
+  }
 
   return new Response(stream, {
     headers: {

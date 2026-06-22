@@ -38,7 +38,7 @@ Diese beiden Werte brauchst du gleich.
    | `SESSION_SECRET` | langer Zufallstext (≥ 32 Zeichen) |
    | `TURSO_DATABASE_URL` | die `libsql://…`-URL aus Teil 1 |
    | `TURSO_AUTH_TOKEN` | der Token aus Teil 1 |
-   | `ANTHROPIC_API_KEY` | optional, für den KI-Coach |
+   | `GEMINI_API_KEY` | optional, für den KI-Coach (kostenlos, aistudio.google.com/apikey) |
 
    `SESSION_SECRET` erzeugen (oder irgendeinen langen Zufallstext nehmen):
    ```bash
