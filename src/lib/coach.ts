@@ -13,13 +13,24 @@ Deine Aufgabe: die bereitgestellten Strava-Trainingsdaten des Athleten analysier
 
 Leitlinien:
 - Antworte auf Deutsch, in der Du-Form, freundlich und direkt – wie ein guter Trainer, nicht wie ein Lehrbuch.
-- Stütze dich auf die konkreten Zahlen aus dem DatKontext (CTL/ATL/TSB, Wochenlast, Zonen). Zitiere relevante Werte, statt allgemein zu bleiben.
+- Stütze dich auf die konkreten Zahlen aus dem Datenkontext (CTL/ATL/TSB, Wochenlast, Zonen). Zitiere relevante Werte, statt allgemein zu bleiben.
 - Gib konkrete, umsetzbare Ratschläge (z. B. „diese Woche 1 Tag mehr Grundlage, 1 Intervall-Einheit"), keine generischen Floskeln.
 - Erkläre die Trainingslehre kurz, wenn es dem Verständnis hilft (z. B. was TSB über die Form aussagt), aber halte dich knapp.
 - Sei ehrlich über Unsicherheiten: Die Werte sind Näherungen aus Strava-Durchschnitten (keine Streams). Wenn FTP/HF fehlen, weise darauf hin, dass präzisere Empfehlungen damit möglich wären.
 - Bei Anzeichen von Überlastung (stark negativer TSB, steiler Lastanstieg) rate zu Erholung – Gesundheit geht vor.
-- Du gibst Trainings-, kein medizinisches Beratung. Bei Schmerzen/Verletzungen verweise an Fachleute.
-- Beginne mit der Kernaussage, dann die Begründung. Halte Antworten fokussiert und gut lesbar.`;
+- Du gibst Trainings-, keine medizinische Beratung. Bei Schmerzen/Verletzungen verweise an Fachleute.
+- Beginne mit der Kernaussage, dann die Begründung. Halte Antworten fokussiert und gut lesbar.
+
+Plan-Abgleich & Fehleranalyse:
+- Wenn ein Trainingsplan hinterlegt ist, vergleiche die tatsächlich gefahrenen Einheiten (Wochenlast, Zonen, Form) mit dem Plan und benenne klar, wo abgewichen wurde (zu viel, zu wenig, falsche Intensität, ausgelassene Schlüsseleinheiten).
+- Achte aktiv auf typische Trainingsfehler und sprich sie an, wenn die Daten sie zeigen:
+  • zu steiler Lastanstieg von Woche zu Woche (Verletzungs-/Übertrainingsrisiko),
+  • zu viel Zeit in der „grauen Zone" (Z3/Tempo) statt klarer Polarisierung (viel Z1/Z2-Grundlage, gezielt harte Einheiten),
+  • zu wenig Grundlagenumfang,
+  • dauerhaft stark negativer TSB ohne Erholungswochen (fehlende Regeneration),
+  • keine Ruhetage / monotones Training,
+  • fehlende Formspitze/Tapering vor einem Zieltermin.
+- Ist kein Plan hinterlegt, weise freundlich darauf hin, dass ein hinterlegter Plan den Abgleich verbessert, und beurteile das Training anhand allgemeiner Trainingsprinzipien.`;
 
 function fmtNum(n: number | null | undefined, unit = ""): string {
   if (n == null) return "nicht gesetzt";
@@ -40,6 +51,7 @@ export function buildAthleteContext(
   settings: AthleteSettings,
   analysis: AnalysisResult,
   days: number,
+  trainingPlan = "",
 ): string {
   const name = [athlete.firstname, athlete.lastname].filter(Boolean).join(" ") || "Athlet";
   const lines: string[] = [];
@@ -52,6 +64,16 @@ export function buildAthleteContext(
   lines.push(`- Schwellen-HF: ${fmtNum(settings.thresholdHr, " bpm")}`);
   lines.push(`- Ruhe-HF: ${fmtNum(settings.restHr, " bpm")}`);
   lines.push("");
+
+  if (trainingPlan.trim()) {
+    lines.push("## Trainingsplan des Athleten");
+    lines.push(trainingPlan.trim());
+    lines.push("");
+  } else {
+    lines.push("## Trainingsplan");
+    lines.push("(kein Trainingsplan hinterlegt)");
+    lines.push("");
+  }
 
   if (analysis.current) {
     const c = analysis.current;
@@ -103,7 +125,7 @@ export interface CoachMessage {
 /** Suggested starter questions shown in the UI. */
 export const SUGGESTED_QUESTIONS = [
   "Wie ist meine aktuelle Form einzuschätzen?",
+  "Halte ich meinen Trainingsplan ein?",
+  "Welche Trainingsfehler erkennst du in den letzten Wochen?",
   "Was sollte ich diese Woche trainieren?",
-  "Trainiere ich genug Grundlage oder zu viel Intensität?",
-  "Wie baue ich Form für ein Rennen in 8 Wochen auf?",
 ];

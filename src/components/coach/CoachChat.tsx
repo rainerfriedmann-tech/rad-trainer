@@ -7,12 +7,29 @@ interface Message {
   content: string;
 }
 
-export function CoachChat({ suggestions }: { suggestions: string[] }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export function CoachChat({
+  suggestions,
+  initialMessages = [],
+}: {
+  suggestions: string[];
+  initialMessages?: Message[];
+}) {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  async function clearHistory() {
+    if (busy) return;
+    try {
+      await fetch("/api/coach", { method: "DELETE" });
+    } catch {
+      /* ignore – clearing is best-effort */
+    }
+    setMessages([]);
+    setError(null);
+  }
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -64,6 +81,18 @@ export function CoachChat({ suggestions }: { suggestions: string[] }) {
 
   return (
     <div className="flex flex-col rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      {messages.length > 0 && (
+        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-zinc-800">
+          <span className="text-xs text-zinc-500">Gespeicherter Verlauf</span>
+          <button
+            onClick={clearHistory}
+            disabled={busy}
+            className="text-xs text-zinc-500 underline-offset-2 hover:text-red-600 hover:underline disabled:opacity-40"
+          >
+            Verlauf löschen
+          </button>
+        </div>
+      )}
       <div
         ref={scrollRef}
         className="max-h-[60vh] min-h-[16rem] space-y-4 overflow-y-auto p-5"

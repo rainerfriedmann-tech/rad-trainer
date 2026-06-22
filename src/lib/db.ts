@@ -45,6 +45,20 @@ const SCHEMA_STATEMENTS = [
    )`,
   `CREATE INDEX IF NOT EXISTS idx_activities_athlete_date
      ON activities(athlete_id, start_date)`,
+  `CREATE TABLE IF NOT EXISTS training_plan (
+     athlete_id INTEGER PRIMARY KEY,
+     content    TEXT NOT NULL,
+     updated_at INTEGER NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS coach_messages (
+     id         INTEGER PRIMARY KEY AUTOINCREMENT,
+     athlete_id INTEGER NOT NULL,
+     role       TEXT NOT NULL,
+     content    TEXT NOT NULL,
+     created_at INTEGER NOT NULL
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_coach_messages_athlete
+     ON coach_messages(athlete_id, id)`,
 ];
 
 const globalForDb = globalThis as unknown as {

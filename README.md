@@ -57,6 +57,14 @@ Tarif), sonst über **Claude**. Ohne Key zeigt die Coach-Seite einen Hinweis sta
 des Chats. Die Anfragen laufen serverseitig (`/api/coach`), der Key verlässt den
 Server nicht.
 
+Zusätzlich:
+- **Chatverlauf bleibt erhalten** (in der DB gespeichert) – beim erneuten Öffnen
+  ist das Gespräch wieder da, du kannst darauf aufbauen. „Verlauf löschen" leert ihn.
+- **Trainingsplan** hinterlegen (Freitext auf der Coach-Seite): Der Coach gleicht
+  deine tatsächlichen Einheiten mit dem Plan ab und weist auf Abweichungen und
+  typische Trainingsfehler hin (z. B. zu steiler Lastanstieg, zu viel „graue Zone",
+  fehlende Erholung).
+
 ## Trainingsmetriken (Milestone 2)
 
 Unter **„📊 Analyse"** (Button im Dashboard) werden deine Aktivitäten der

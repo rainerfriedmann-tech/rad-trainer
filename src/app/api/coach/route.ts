@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getValidSession } from "@/lib/session";
 import type { AthleteSettings } from "@/lib/settings";
-import { getStoredSettings } from "@/lib/store";
+import {
+  addCoachMessage,
+  clearCoachMessages,
+  getStoredSettings,
+  getTrainingPlan,
+} from "@/lib/store";
 import { loadAnalysis } from "@/lib/analysisLoader";
 import { buildAthleteContext, buildSystemPrompt, type CoachMessage } from "@/lib/coach";
 import { geminiConfigured, streamGemini } from "@/lib/gemini";
+
+/** How many recent turns to send to the model (bounds token usage). */
+const HISTORY_LIMIT = 20;
 
 export const dynamic = "force-dynamic";
 // Coaching answers can take a moment; 60s is the Vercel Hobby cap.
@@ -97,29 +105,71 @@ export async function POST(req: NextRequest) {
 
   let system: string;
   try {
-    const analysis = await loadAnalysis(session.athlete.id, session.access_token, settings, days);
+    const [analysis, plan] = await Promise.all([
+      loadAnalysis(session.athlete.id, session.access_token, settings, days),
+      getTrainingPlan(session.athlete.id),
+    ]);
     system = buildSystemPrompt(
-      buildAthleteContext(session.athlete, settings, analysis, days),
+      buildAthleteContext(session.athlete, settings, analysis, days, plan),
     );
   } catch (e) {
     console.error("Coach context build failed:", e);
     return NextResponse.json({ error: "analysis_failed" }, { status: 502 });
   }
 
-  let stream: ReadableStream<Uint8Array>;
+  // Persist the new user turn (the most recent message in the history).
+  const athleteId = session.athlete.id;
+  const lastUser = messages[messages.length - 1];
+  if (lastUser.role === "user") {
+    await addCoachMessage(athleteId, "user", lastUser.content);
+  }
+
+  // Only send the most recent turns to the model to bound token usage.
+  const recent = messages.slice(-HISTORY_LIMIT);
+
+  let providerStream: ReadableStream<Uint8Array>;
   try {
-    stream = geminiConfigured()
-      ? await streamGemini(system, messages)
-      : streamClaude(system, messages);
+    providerStream = geminiConfigured()
+      ? await streamGemini(system, recent)
+      : streamClaude(system, recent);
   } catch (e) {
     console.error("Coach stream failed:", e);
     return NextResponse.json({ error: "coach_failed" }, { status: 502 });
   }
 
-  return new Response(stream, {
+  // Tee the stream so we can persist the full assistant reply once complete.
+  const decoder = new TextDecoder();
+  let full = "";
+  const persist = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      full += decoder.decode(chunk, { stream: true });
+      controller.enqueue(chunk);
+    },
+    async flush() {
+      if (full.trim()) {
+        try {
+          await addCoachMessage(athleteId, "assistant", full);
+        } catch (e) {
+          console.error("Failed to persist coach reply:", e);
+        }
+      }
+    },
+  });
+
+  return new Response(providerStream.pipeThrough(persist), {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "no-store",
     },
   });
+}
+
+/** DELETE /api/coach — clear the saved chat history for the current athlete. */
+export async function DELETE() {
+  const session = await getValidSession();
+  if (!session) {
+    return NextResponse.json({ error: "not_connected" }, { status: 401 });
+  }
+  await clearCoachMessages(session.athlete.id);
+  return NextResponse.json({ ok: true });
 }

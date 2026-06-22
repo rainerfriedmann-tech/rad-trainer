@@ -3,6 +3,7 @@ import type { InStatement, Row } from "@libsql/client";
 import { getClient } from "./db";
 import type { StravaActivity, StravaAthlete, StravaTokens } from "./strava";
 import { DEFAULT_SETTINGS, type AthleteSettings } from "./settings";
+import type { CoachMessage } from "./coach";
 
 export interface StoredAthlete {
   athlete: StravaAthlete;
@@ -198,4 +199,71 @@ export async function getStoredActivities(
     args: { id: athleteId, after: afterIso },
   });
   return res.rows.map((r) => JSON.parse(String(r.data)) as StravaActivity);
+}
+
+// --- Training plan ----------------------------------------------------------
+
+export async function getTrainingPlan(athleteId: number): Promise<string> {
+  const client = await getClient();
+  const res = await client.execute({
+    sql: "SELECT content FROM training_plan WHERE athlete_id = :id",
+    args: { id: athleteId },
+  });
+  return res.rows[0] ? String(res.rows[0].content) : "";
+}
+
+export async function saveTrainingPlan(athleteId: number, content: string): Promise<void> {
+  const client = await getClient();
+  await client.execute({
+    sql: `INSERT INTO training_plan (athlete_id, content, updated_at)
+          VALUES (:id, :content, :now)
+          ON CONFLICT(athlete_id) DO UPDATE SET
+            content = excluded.content,
+            updated_at = excluded.updated_at`,
+    args: { id: athleteId, content, now: Math.floor(Date.now() / 1000) },
+  });
+}
+
+// --- Coach chat history -----------------------------------------------------
+
+export async function addCoachMessage(
+  athleteId: number,
+  role: CoachMessage["role"],
+  content: string,
+): Promise<void> {
+  const client = await getClient();
+  await client.execute({
+    sql: `INSERT INTO coach_messages (athlete_id, role, content, created_at)
+          VALUES (:id, :role, :content, :now)`,
+    args: { id: athleteId, role, content, now: Math.floor(Date.now() / 1000) },
+  });
+}
+
+/** Return the chat history (oldest first), capped to the most recent `limit`. */
+export async function getCoachMessages(
+  athleteId: number,
+  limit = 100,
+): Promise<CoachMessage[]> {
+  const client = await getClient();
+  const res = await client.execute({
+    sql: `SELECT role, content FROM coach_messages
+          WHERE athlete_id = :id
+          ORDER BY id DESC
+          LIMIT :limit`,
+    args: { id: athleteId, limit },
+  });
+  return res.rows
+    .map((r) => ({
+      role: String(r.role) === "assistant" ? "assistant" : "user",
+      content: String(r.content),
+    }) as CoachMessage)
+    .reverse();
+}
+
+export async function clearCoachMessages(athleteId: number): Promise<void> {
+  const client = await getClient();
+  await client.execute({
+    sql: "DELETE FROM coach_messages WHERE athlete_id = :id",
+    args: { id: athleteId },
+  });
 }

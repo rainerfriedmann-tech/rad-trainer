@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { readSession } from "@/lib/session";
+import { getCoachMessages, getTrainingPlan } from "@/lib/store";
 import { ConnectStrava } from "@/components/ConnectStrava";
 import { CoachChat } from "@/components/coach/CoachChat";
+import { TrainingPlanForm } from "@/components/coach/TrainingPlanForm";
 import { SUGGESTED_QUESTIONS } from "@/lib/coach";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +11,13 @@ export const dynamic = "force-dynamic";
 export default async function CoachPage() {
   const session = await readSession();
   const configured = !!(process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY);
+
+  const [history, plan] = session
+    ? await Promise.all([
+        getCoachMessages(session.athlete.id),
+        getTrainingPlan(session.athlete.id),
+      ])
+    : [[], ""];
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-4 py-10">
@@ -41,7 +50,10 @@ export default async function CoachPage() {
           </p>
         </div>
       ) : (
-        <CoachChat suggestions={SUGGESTED_QUESTIONS} />
+        <div className="space-y-4">
+          <TrainingPlanForm plan={plan} />
+          <CoachChat suggestions={SUGGESTED_QUESTIONS} initialMessages={history} />
+        </div>
       )}
     </main>
   );
